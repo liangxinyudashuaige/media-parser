@@ -1,3 +1,4 @@
+import requests
 from flask import Blueprint, request
 from configs.logging_config import logger
 from configs.general_constants import DOMAIN_TO_NAME
@@ -81,3 +82,35 @@ def safe_execute(func, default=None):
         return func()
     except Exception:
         return default
+from flask import Blueprint, request, Response
+import requests
+
+bp = Blueprint('parse', __name__)
+
+
+@bp.route('/download', methods=['POST'])
+def download():
+    try:
+        data = request.json
+        video_url = data.get('video_url')
+        
+        if not video_url:
+            return make_response(400, '缺少视频链接', None, False), 400
+        
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+        
+        resp = requests.get(video_url, headers=headers, stream=True, timeout=30)
+        
+        return Response(
+            resp.iter_content(chunk_size=8192),
+            mimetype='video/mp4',
+            headers={
+                'Content-Disposition': 'attachment; filename=video.mp4',
+                'Content-Length': resp.headers.get('Content-Length', 0)
+            }
+        )
+    except Exception as e:
+        logger.exception("Download Error")
+        return make_response(500, '下载失败，请稍后再试', None, False), 500
