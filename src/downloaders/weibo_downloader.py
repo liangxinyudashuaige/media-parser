@@ -171,8 +171,8 @@ class WeiboDownloader(BaseDownloader):
     except Exception as e:
         logger.error(f"Weibo get_cover_photo_url error: {e}")
         return None
-
-    def get_image_list(self):
+        
+def get_image_list(self):
     try:
         pics = self.post_data.get('pics', [])
         if not pics:
@@ -210,7 +210,7 @@ class WeiboDownloader(BaseDownloader):
     except Exception as e:
         logger.error(f"Weibo get_image_list error: {e}")
         return []
-
+        
     def get_author_info(self):
         try:
             user = self.post_data.get('user', {})
