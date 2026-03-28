@@ -151,20 +151,65 @@ class WeiboDownloader(BaseDownloader):
         return content
 
     def get_cover_photo_url(self):
-        try:
-            page_info = self.post_data.get('page_info', {})
-            if page_info.get('page_pic') and page_info['page_pic'].get('url'):
-                return page_info['page_pic']['url']
-        except:
-            pass
+    try:
+        image_list = self.get_image_list()
+        if image_list:
+            return image_list[0]
+        
+        page_info = self.post_data.get('page_info', {})
+        if page_info and page_info.get('page_pic'):
+            pic_url = page_info['page_pic'].get('url', '')
+            if pic_url:
+                if '/orj360/' in pic_url:
+                    pic_url = pic_url.replace('/orj360/', '/large/')
+                elif '/mw690/' in pic_url:
+                    pic_url = pic_url.replace('/mw690/', '/large/')
+                return pic_url
+        
+        return None
+        
+    except Exception as e:
+        logger.error(f"Weibo get_cover_photo_url error: {e}")
         return None
 
     def get_image_list(self):
-        try:
-            pics = self.post_data.get('pics', [])
-            return [p.get('large', {}).get('url') for p in pics if p.get('large', {}).get('url')]
-        except:
+    try:
+        pics = self.post_data.get('pics', [])
+        if not pics:
             return []
+        
+        image_urls = []
+        
+        for p in pics:
+            url = None
+            
+            if p.get('large'):
+                url = p['large'].get('url')
+            
+            if not url:
+                url = p.get('url', '')
+                if url:
+                    if '/orj360/' in url:
+                        url = url.replace('/orj360/', '/large/')
+                    elif '/mw690/' in url:
+                        url = url.replace('/mw690/', '/large/')
+                    elif '/mw1024/' in url:
+                        url = url.replace('/mw1024/', '/large/')
+                    elif '/square/' in url:
+                        url = url.replace('/square/', '/large/')
+            
+            if not url:
+                if p.get('osized'):
+                    url = p['osized'].get('url')
+            
+            if url and url.startswith('http'):
+                image_urls.append(url)
+        
+        return image_urls
+        
+    except Exception as e:
+        logger.error(f"Weibo get_image_list error: {e}")
+        return []
 
     def get_author_info(self):
         try:
