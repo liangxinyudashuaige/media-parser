@@ -82,3 +82,54 @@ def safe_execute(func, default=None):
         return func()
     except Exception:
         return default
+
+@bp.route('/download', methods=['GET', 'POST'])
+def download_video():
+    """
+    视频下载中转接口
+    小程序通过此接口下载抖音视频，然后保存到相册
+    """
+    # 在函数内部导入，不影响其他代码
+    from flask import request, Response, jsonify
+    import requests
+    
+    try:
+        # 获取视频 URL
+        if request.method == 'POST':
+            video_url = request.json.get('video_url')
+        else:
+            video_url = request.args.get('url')
+        
+        if not video_url:
+            return jsonify({
+                'retcode': 400,
+                'retdesc': '缺少视频 URL 参数'
+            }), 400
+        
+        logger.info(f'开始下载视频：{video_url}')
+        
+        # 下载视频文件
+        response = requests.get(video_url, stream=True, timeout=30)
+        
+        if response.status_code != 200:
+            return jsonify({
+                'retcode': 500,
+                'retdesc': f'下载失败：{response.status_code}'
+            }), 500
+        
+        # 返回视频文件流
+        return Response(
+            response.iter_content(chunk_size=8192),
+            content_type='video/mp4',
+            headers={
+                'Content-Disposition': 'attachment; filename="video.mp4"',
+                'Cache-Control': 'no-cache'
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f'视频下载失败：{str(e)}')
+        return jsonify({
+            'retcode': 500,
+            'retdesc': f'下载失败：{str(e)}'
+        }), 500
